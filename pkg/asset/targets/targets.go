@@ -3,6 +3,7 @@ package targets
 import (
 	"github.com/openshift/installer/pkg/asset"
 	"github.com/openshift/installer/pkg/asset/cluster"
+	"github.com/openshift/installer/pkg/asset/ignition/aio"
 	"github.com/openshift/installer/pkg/asset/ignition/bootstrap"
 	"github.com/openshift/installer/pkg/asset/ignition/machine"
 	"github.com/openshift/installer/pkg/asset/installconfig"
@@ -66,6 +67,11 @@ var (
 		&password.KubeadminPassword{},
 		&bootstrap.SingleNodeBootstrapInPlace{Bootstrap: &bootstrap.Bootstrap{}},
 		&cluster.Metadata{},
+	}
+
+	// AIOConfigs are the aio-config targeted assets.
+	AIOConfig = []asset.WritableAsset{
+		&aio.AIO{},
 	}
 
 	// Cluster are the cluster targeted assets.
