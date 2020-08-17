@@ -46,6 +46,7 @@ require (
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v0.0.0-20191119172530-79f836b90111
 	github.com/kubevirt/terraform-provider-kubevirt v0.0.0-00010101000000-000000000000
 	github.com/libvirt/libvirt-go v5.10.0+incompatible
+	github.com/keybase/go-crypto v0.0.0-20190828182435-a05457805304 // indirect
 	github.com/libvirt/libvirt-go-xml v5.10.0+incompatible // indirect
 	github.com/masterzen/simplexml v0.0.0-20190410153822-31eea3082786 // indirect
 	github.com/masterzen/winrm v0.0.0-20190308153735-1d17eaf15943 // indirect
@@ -67,7 +68,8 @@ require (
 	github.com/ovirt/go-ovirt v0.0.0-20210112072624-e4d3b104de71
 	github.com/ovirt/terraform-provider-ovirt v0.4.3-0.20210118101701-cc657a8c6634
 	github.com/packer-community/winrmcp v0.0.0-20180921211025-c76d91c1e7db // indirect
-	github.com/pborman/uuid v1.2.0
+	github.com/pborman/uuid v1.2.0 // indirect
+	github.com/pierrec/lz4 v2.3.0+incompatible // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.10.1
 	github.com/prometheus/client_golang v1.7.1
@@ -80,6 +82,7 @@ require (
 	github.com/terraform-provider-openstack/terraform-provider-openstack v1.33.0
 	github.com/terraform-providers/terraform-provider-aws v1.60.1-0.20200807230610-d5346d47e3af
 	github.com/terraform-providers/terraform-provider-azurerm v1.44.1-0.20200911233120-57b2bfc9d42c
+	github.com/stoewer/go-strcase v1.1.0 // indirect
 	github.com/terraform-providers/terraform-provider-google v1.20.1-0.20200623174414-27107f2ee160
 	github.com/terraform-providers/terraform-provider-ignition/v2 v2.1.0
 	github.com/terraform-providers/terraform-provider-local v1.4.0
@@ -87,7 +90,7 @@ require (
 	github.com/terraform-providers/terraform-provider-vsphere v1.16.2
 	github.com/ulikunitz/xz v0.5.8
 	github.com/vincent-petithory/dataurl v0.0.0-20191104211930-d1553a71de50
-	github.com/vmware/govmomi v0.22.2
+	github.com/vmware/govmomi v0.22.2 // indirect
 	github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca // indirect
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b
