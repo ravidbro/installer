@@ -11,6 +11,7 @@ import (
 
 	"github.com/openshift/installer/pkg/types"
 	baremetaltypes "github.com/openshift/installer/pkg/types/baremetal"
+	kubevirttypes "github.com/openshift/installer/pkg/types/kubevirt"
 	openstacktypes "github.com/openshift/installer/pkg/types/openstack"
 	ovirttypes "github.com/openshift/installer/pkg/types/ovirt"
 	vspheretypes "github.com/openshift/installer/pkg/types/vsphere"
@@ -36,6 +37,8 @@ func pointerIgnitionConfig(installConfig *types.InstallConfig, rootCA []byte, ro
 		if installConfig.VSphere.APIVIP != "" {
 			ignitionHost = net.JoinHostPort(installConfig.VSphere.APIVIP, "22623")
 		}
+	case kubevirttypes.Name:
+		ignitionHost = net.JoinHostPort(installConfig.Kubevirt.APIVIP, "22623")
 	}
 	return &igntypes.Config{
 		Ignition: igntypes.Ignition{
