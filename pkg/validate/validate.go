@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 
@@ -193,5 +194,11 @@ func MAC(addr string) error {
 // UUID validates that a uuid is non-empty and a valid uuid.
 func UUID(val string) error {
 	_, err := uuid.Parse(val)
+	return err
+}
+
+// FileInfo validates that a given path is not empty and a valid file.
+func FileInfo(val string) error {
+	_, err := os.Stat(val)
 	return err
 }

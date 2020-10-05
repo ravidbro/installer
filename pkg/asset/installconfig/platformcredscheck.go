@@ -14,6 +14,7 @@ import (
 	"github.com/openshift/installer/pkg/types/azure"
 	"github.com/openshift/installer/pkg/types/baremetal"
 	"github.com/openshift/installer/pkg/types/gcp"
+	"github.com/openshift/installer/pkg/types/kubevirt"
 	"github.com/openshift/installer/pkg/types/libvirt"
 	"github.com/openshift/installer/pkg/types/none"
 	"github.com/openshift/installer/pkg/types/openstack"
@@ -75,6 +76,9 @@ func (a *PlatformCredsCheck) Generate(dependencies asset.Parents) error {
 		if err != nil {
 			return errors.Wrap(err, "testing Engine connection")
 		}
+	case kubevirt.Name:
+		// no creds to check
+		// TODO <nargaman> Add kubeconfig validation
 	default:
 		err = fmt.Errorf("unknown platform type %q", platform)
 	}
