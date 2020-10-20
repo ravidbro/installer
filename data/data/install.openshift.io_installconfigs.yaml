@@ -182,6 +182,20 @@ spec:
                             type: string
                           type: array
                       type: object
+                    kubevirt:
+                      description: Kubevirt is the configuration used when installing on Kubevirt.
+                      properties:
+                        cpu:
+                          description: CPU is the mount of cpus used
+                          format: int32
+                          type: integer
+                        memory:
+                          description: 'Memory is the size of a VM''s memory. Format: https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/resource/quantity.go'
+                          type: string
+                        storageSize:
+                          description: 'StorageSize is the size of VM''s boot volume Format: https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/resource/quantity.go'
+                          type: string
+                      type: object
                     libvirt:
                       description: Libvirt is the configuration used when installing on libvirt.
                       type: object
@@ -449,6 +463,20 @@ spec:
                         items:
                           type: string
                         type: array
+                    type: object
+                  kubevirt:
+                    description: Kubevirt is the configuration used when installing on Kubevirt.
+                    properties:
+                      cpu:
+                        description: CPU is the mount of cpus used
+                        format: int32
+                        type: integer
+                      memory:
+                        description: 'Memory is the size of a VM''s memory. Format: https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/resource/quantity.go'
+                        type: string
+                      storageSize:
+                        description: 'StorageSize is the size of VM''s boot volume Format: https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/resource/quantity.go'
+                        type: string
                     type: object
                   libvirt:
                     description: Libvirt is the configuration used when installing on libvirt.
@@ -1053,6 +1081,48 @@ spec:
                 required:
                 - projectID
                 - region
+                type: object
+              kubevirt:
+                description: Kubevirt is the configuration used when installing on kubevirt.
+                properties:
+                  apiVIP:
+                    description: APIVIP is an IP which will be served by bootstrap and then pivoted masters, using keepalived
+                    type: string
+                  defaultMachinePlatform:
+                    description: DefaultMachinePlatform is the default configuration used when installing on Kubevirt for machine pools which do not define their own platform configuration.
+                    properties:
+                      cpu:
+                        description: CPU is the mount of cpus used
+                        format: int32
+                        type: integer
+                      memory:
+                        description: 'Memory is the size of a VM''s memory. Format: https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/resource/quantity.go'
+                        type: string
+                      storageSize:
+                        description: 'StorageSize is the size of VM''s boot volume Format: https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/resource/quantity.go'
+                        type: string
+                    type: object
+                  ingressVIP:
+                    description: IngressIP is an external IP which routes to the default ingress controller.
+                    type: string
+                  namespace:
+                    description: The Namespace in the infra cluster, which the control plane (master vms) and the compute (worker vms) are installed in
+                    type: string
+                  networkName:
+                    description: NetworkName is the target network of all the network interfaces of the nodes.
+                    type: string
+                  persistentVolumeAccessMode:
+                    description: PersistentVolumeAccessMode is the access mode should be use with the persistent volumes
+                    type: string
+                  storageClass:
+                    description: The Storage Class used in the infra cluster
+                    type: string
+                required:
+                - apiVIP
+                - ingressVIP
+                - namespace
+                - networkName
+                - storageClass
                 type: object
               libvirt:
                 description: Libvirt is the configuration used when installing on libvirt.
