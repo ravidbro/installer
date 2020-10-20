@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/installer/pkg/asset/installconfig/aws"
 	icazure "github.com/openshift/installer/pkg/asset/installconfig/azure"
 	icgcp "github.com/openshift/installer/pkg/asset/installconfig/gcp"
+	ickubevirt "github.com/openshift/installer/pkg/asset/installconfig/kubevirt"
 	icopenstack "github.com/openshift/installer/pkg/asset/installconfig/openstack"
 	icovirt "github.com/openshift/installer/pkg/asset/installconfig/ovirt"
 	icvsphere "github.com/openshift/installer/pkg/asset/installconfig/vsphere"
@@ -43,6 +44,7 @@ func (a *InstallConfig) Dependencies() []asset.Asset {
 		&sshPublicKey{},
 		&baseDomain{},
 		&clusterName{},
+		&networking{},
 		&pullSecret{},
 		&platform{},
 	}
@@ -53,12 +55,14 @@ func (a *InstallConfig) Generate(parents asset.Parents) error {
 	sshPublicKey := &sshPublicKey{}
 	baseDomain := &baseDomain{}
 	clusterName := &clusterName{}
+	networking := &networking{}
 	pullSecret := &pullSecret{}
 	platform := &platform{}
 	parents.Get(
 		sshPublicKey,
 		baseDomain,
 		clusterName,
+		networking,
 		pullSecret,
 		platform,
 	)
@@ -75,6 +79,11 @@ func (a *InstallConfig) Generate(parents asset.Parents) error {
 		PullSecret: pullSecret.PullSecret,
 	}
 
+	if a.Config.Networking == nil {
+		a.Config.Networking = &types.Networking{}
+	}
+	a.Config.Networking.MachineNetwork = networking.machineNetwork
+
 	a.Config.AWS = platform.AWS
 	a.Config.Libvirt = platform.Libvirt
 	a.Config.None = platform.None
@@ -84,6 +93,7 @@ func (a *InstallConfig) Generate(parents asset.Parents) error {
 	a.Config.GCP = platform.GCP
 	a.Config.BareMetal = platform.BareMetal
 	a.Config.Ovirt = platform.Ovirt
+	a.Config.Kubevirt = platform.Kubevirt
 
 	return a.finish("")
 }
@@ -186,6 +196,10 @@ func (a *InstallConfig) platformValidation() error {
 	}
 	if a.Config.Platform.OpenStack != nil {
 		return icopenstack.Validate(a.Config)
+	}
+	if a.Config.Platform.Kubevirt != nil {
+		clientBuilderFunc := ickubevirt.NewClient
+		return ickubevirt.Validate(a.Config, clientBuilderFunc)
 	}
 	return field.ErrorList{}.ToAggregate()
 }
