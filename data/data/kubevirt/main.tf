@@ -9,7 +9,7 @@ module "datavolume" {
   pvc_name       = var.kubevirt_source_pvc_name
   namespace      = var.kubevirt_namespace
   labels         = var.kubevirt_labels
-  storage        = "20Gi"
+  storage        = "30Gi"
   pv_access_mode = var.kubevirt_pv_access_mode
   storage_class  = var.kubevirt_storage_class
   image_url      = var.kubevirt_image_url

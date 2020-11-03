@@ -403,6 +403,14 @@ func (m *Master) Generate(dependencies asset.Parents) error {
 		machineConfigs = append(machineConfigs, ignFIPS)
 	}
 
+	if ic.Kubevirt != nil {
+		ignInfraServiceAccount, err := machineconfig.ForInfraServiceAccount("master")
+		if err != nil {
+			return errors.Wrap(err, "failed to create ignition for infra service account service for master machines")
+		}
+		machineConfigs = append(machineConfigs, ignInfraServiceAccount)
+	}
+
 	m.MachineConfigFiles, err = machineconfig.Manifests(machineConfigs, "master", directory)
 	if err != nil {
 		return errors.Wrap(err, "failed to create MachineConfig manifests for master machines")

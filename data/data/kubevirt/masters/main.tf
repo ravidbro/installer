@@ -38,7 +38,34 @@ resource "kubernetes_secret" "master_ignition" {
   }
 }
 
+resource "kubernetes_service_account" "root" {
+  metadata {
+    name = "${var.cluster_id}-root"
+    namespace = var.namespace
+    labels = var.labels
+  }
+}
+
+resource "kubernetes_role_binding" "root" {
+  metadata {
+    name = "${var.cluster_id}-root"
+    namespace = var.namespace
+    labels = var.labels
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind = "ClusterRole"
+    name = "system:aggregate-to-view"
+  }
+  subject {
+    kind = "ServiceAccount"
+    name = kubernetes_service_account.root.metadata[0].name
+    namespace = var.namespace
+  }
+}
+
 locals {
+  sevice_account_disk_serial = "SERVICEACCOUNT"
   anti_affinity_label = {
     "anti-affinity-tag-${var.cluster_id}" = "master"
   }
@@ -102,6 +129,14 @@ resource "kubevirt_virtual_machine" "master_vm" {
             }
           }
         }
+        volume {
+          name = "${var.cluster_id}-master-${count.index}-serviceaccountdisk"
+          volume_source {
+            service_account {
+              service_account_name = kubernetes_service_account.root.metadata[0].name
+            }
+          }
+        }
         domain {
           resources {
             requests = {
@@ -120,6 +155,15 @@ resource "kubevirt_virtual_machine" "master_vm" {
             }
             disk {
               name = "${var.cluster_id}-master-${count.index}-cloudinitdisk"
+              disk_device {
+                disk {
+                  bus = "virtio"
+                }
+              }
+            }
+            disk {
+              name = "${var.cluster_id}-master-${count.index}-serviceaccountdisk"
+              serial = local.sevice_account_disk_serial
               disk_device {
                 disk {
                   bus = "virtio"

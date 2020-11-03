@@ -19,13 +19,11 @@ package kubevirt
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"time"
 
 	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -36,22 +34,6 @@ import (
 	kubevirtapiv1 "kubevirt.io/client-go/api/v1"
 	cdiapiv1alpa1 "kubevirt.io/containerized-data-importer/pkg/apis/core/v1alpha1"
 )
-
-var (
-	kubeConfigEnvName         = "KUBECONFIG"
-	kubeConfigDefaultFilename = filepath.Join(os.Getenv("HOME"), ".kube", "config")
-)
-
-// LoadKubeConfigContent returns the kubeconfig file content
-func LoadKubeConfigContent() ([]byte, error) {
-	kubeConfigFilename := os.Getenv(kubeConfigEnvName)
-	// Fallback to default kubeconfig file location if no env variable set
-	if kubeConfigFilename == "" {
-		kubeConfigFilename = kubeConfigDefaultFilename
-	}
-
-	return ioutil.ReadFile(kubeConfigFilename)
-}
 
 //go:generate mockgen -source=./client.go -destination=./mock/client_generated.go -package=mock
 
@@ -70,6 +52,10 @@ type Client interface {
 	ListDataVolumeNames(namespace string, requiredLabels map[string]string) ([]string, error)
 	DeleteSecret(namespace string, name string, wait bool) error
 	ListSecretNames(namespace string, requiredLabels map[string]string) ([]string, error)
+	DeleteServiceAccount(namespace string, name string, wait bool) error
+	ListServiceAccountNames(namespace string, requiredLabels map[string]string) ([]string, error)
+	DeleteRoleBinding(namespace string, name string, wait bool) error
+	ListRoleBindingNames(namespace string, requiredLabels map[string]string) ([]string, error)
 }
 
 type client struct {
@@ -149,6 +135,26 @@ func (c *client) DeleteSecret(namespace string, name string, wait bool) error {
 
 func (c *client) ListSecretNames(namespace string, requiredLabels map[string]string) ([]string, error) {
 	secretRes := schema.GroupVersionResource{Group: corev1.SchemeGroupVersion.Group, Version: corev1.SchemeGroupVersion.Version, Resource: "secrets"}
+	return c.listResource(namespace, requiredLabels, secretRes)
+}
+
+func (c *client) DeleteServiceAccount(namespace string, name string, wait bool) error {
+	secretRes := schema.GroupVersionResource{Group: corev1.SchemeGroupVersion.Group, Version: corev1.SchemeGroupVersion.Version, Resource: "serviceaccounts"}
+	return c.deleteResource(namespace, name, secretRes, wait)
+}
+
+func (c *client) ListServiceAccountNames(namespace string, requiredLabels map[string]string) ([]string, error) {
+	secretRes := schema.GroupVersionResource{Group: corev1.SchemeGroupVersion.Group, Version: corev1.SchemeGroupVersion.Version, Resource: "serviceaccounts"}
+	return c.listResource(namespace, requiredLabels, secretRes)
+}
+
+func (c *client) DeleteRoleBinding(namespace string, name string, wait bool) error {
+	secretRes := schema.GroupVersionResource{Group: rbacv1.SchemeGroupVersion.Group, Version: rbacv1.SchemeGroupVersion.Version, Resource: "rolebindings"}
+	return c.deleteResource(namespace, name, secretRes, wait)
+}
+
+func (c *client) ListRoleBindingNames(namespace string, requiredLabels map[string]string) ([]string, error) {
+	secretRes := schema.GroupVersionResource{Group: rbacv1.SchemeGroupVersion.Group, Version: rbacv1.SchemeGroupVersion.Version, Resource: "rolebindings"}
 	return c.listResource(namespace, requiredLabels, secretRes)
 }
 

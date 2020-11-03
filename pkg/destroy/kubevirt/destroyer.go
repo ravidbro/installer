@@ -32,6 +32,12 @@ func (uninstaller *ClusterUninstaller) Run() error {
 	if err := uninstaller.deleteAllSecrets(namespace, labels, kubevirtClient); err != nil {
 		return err
 	}
+	if err := uninstaller.deleteAllServiceAccounts(namespace, labels, kubevirtClient); err != nil {
+		return err
+	}
+	if err := uninstaller.deleteAllRoleBindings(namespace, labels, kubevirtClient); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -76,6 +82,38 @@ func (uninstaller *ClusterUninstaller) deleteAllSecrets(namespace string, labels
 	for _, secretName := range list {
 		uninstaller.Logger.Infof("Delete secret %s", secretName)
 		if err := kubevirtClient.DeleteSecret(namespace, secretName, true); err != nil {
+			// TODO Do we want to continue to other resources?
+			return err
+		}
+	}
+	return nil
+}
+
+func (uninstaller *ClusterUninstaller) deleteAllServiceAccounts(namespace string, labels map[string]string, kubevirtClient ickubevirt.Client) error {
+	list, err := kubevirtClient.ListServiceAccountNames(namespace, labels)
+	if err != nil {
+		return err
+	}
+	uninstaller.Logger.Infof("List tenant cluster's service accounts (in namespace %s) return: %s", namespace, list)
+	for _, serviceAccountName := range list {
+		uninstaller.Logger.Infof("Delete service account %s", serviceAccountName)
+		if err := kubevirtClient.DeleteServiceAccount(namespace, serviceAccountName, true); err != nil {
+			// TODO Do we want to continue to other resources?
+			return err
+		}
+	}
+	return nil
+}
+
+func (uninstaller *ClusterUninstaller) deleteAllRoleBindings(namespace string, labels map[string]string, kubevirtClient ickubevirt.Client) error {
+	list, err := kubevirtClient.ListRoleBindingNames(namespace, labels)
+	if err != nil {
+		return err
+	}
+	uninstaller.Logger.Infof("List tenant cluster's rolebindings (in namespace %s) return: %s", namespace, list)
+	for _, RoleBindingName := range list {
+		uninstaller.Logger.Infof("Delete rolebinding %s", RoleBindingName)
+		if err := kubevirtClient.DeleteRoleBinding(namespace, RoleBindingName, true); err != nil {
 			// TODO Do we want to continue to other resources?
 			return err
 		}
