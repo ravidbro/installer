@@ -13,10 +13,12 @@ bootkube_podman_run() {
     podman run --quiet --net=host "${@}"
 }
 
-MACHINE_CONFIG_OPERATOR_IMAGE=$(image_for machine-config-operator)
 MACHINE_CONFIG_ETCD_IMAGE=$(image_for etcd)
 
 CLUSTER_ETCD_OPERATOR_IMAGE=$(image_for cluster-etcd-operator)
+CONFIG_OPERATOR_IMAGE=$(image_for cluster-config-operator)
+
+CLUSTER_BOOTSTRAP_IMAGE=$(image_for cluster-bootstrap)
 
 KUBE_APISERVER_OPERATOR_IMAGE=$(image_for cluster-kube-apiserver-operator)
 KUBE_CONTROLLER_MANAGER_OPERATOR_IMAGE=$(image_for cluster-kube-controller-manager-operator)
@@ -49,7 +51,6 @@ then
 		--etcd-ca=/assets/tls/etcd-ca-bundle.crt \
 		--etcd-ca-key=/assets/tls/etcd-signer.key \
 		--manifest-etcd-image="${MACHINE_CONFIG_ETCD_IMAGE}" \
-		--etcd-discovery-domain={{.ClusterDomain}} \
 		--manifest-cluster-etcd-operator-image="${CLUSTER_ETCD_OPERATOR_IMAGE}" \
 		--asset-input-dir=/assets/tls \
 		--asset-output-dir=/assets/etcd-bootstrap \
@@ -66,6 +67,33 @@ then
 	cp --recursive etcd-bootstrap/bootstrap-manifests/secrets/etcd-all-peer /etc/kubernetes/static-pod-resources/etcd-member
 
 	touch etcd-bootstrap.done
+fi
+
+if [ ! -f config-bootstrap.done ]
+then
+	echo "Rendering cluster config manifests..."
+
+	rm --recursive --force config-bootstrap
+
+	ADDITIONAL_FLAGS=""
+	if [ -f "$PWD/manifests/cloud-provider-config.yaml" ]; then
+		ADDITIONAL_FLAGS="--cloud-provider-config-input-file=/assets/manifests/cloud-provider-config.yaml"
+	fi
+
+	bootkube_podman_run \
+		--volume "$PWD:/assets:z" \
+		"${CONFIG_OPERATOR_IMAGE}" \
+		/usr/bin/cluster-config-operator render \
+		--cluster-infrastructure-input-file=/assets/manifests/cluster-infrastructure-02-config.yml \
+		--cloud-provider-config-output-file=/assets/config-bootstrap/cloud-provider-config-generated.yaml \
+		--config-output-file=/assets/config-bootstrap/config \
+		--asset-input-dir=/assets/tls \
+		--asset-output-dir=/assets/config-bootstrap \
+		${ADDITIONAL_FLAGS}
+
+	cp config-bootstrap/manifests/* manifests/
+
+	touch config-bootstrap.done
 fi
 
 if [ ! -f kube-apiserver-bootstrap.done ]
@@ -85,10 +113,12 @@ then
 		--asset-input-dir=/assets/tls \
 		--asset-output-dir=/assets/kube-apiserver-bootstrap \
 		--config-output-file=/assets/kube-apiserver-bootstrap/config \
-		--cluster-config-file=/assets/manifests/cluster-network-02-config.yml
+		--cluster-config-file=/assets/manifests/cluster-network-02-config.yml \
+		--cluster-auth-file=/assets/manifests/cluster-authentication-02-config.yaml
 
 	cp kube-apiserver-bootstrap/config /etc/kubernetes/bootstrap-configs/kube-apiserver-config.yaml
 	cp kube-apiserver-bootstrap/bootstrap-manifests/* bootstrap-manifests/
+	cp kube-apiserver-bootstrap/manifests/* manifests/
     sed -i 's/bootstrap-kube-apiserver/kube-apiserver/g' bootstrap-manifests/kube-apiserver-pod.yaml
 
 	touch kube-apiserver-bootstrap.done
@@ -176,6 +206,12 @@ then
 	touch control-plane.done
 fi
 
+echo "Deploying CRD needed by kube-apiserver"
+until kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback apply -f /opt/openshift/manifests/0000_03_authorization-openshift_01_rolebindingrestriction.crd.yaml; do
+    sleep 2s
+done
+echo "CRD Deployed"
+
 echo "Waiting for node to join"
 until [ $(kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback get nodes | grep Ready | wc -l) -eq 1 ]; do
     sleep 5s
@@ -191,6 +227,9 @@ systemctl stop approve-csr.service
 echo "Adding labels"
 kubectl --kubeconfig /opt/openshift/auth/kubeconfig-loopback label node master1 node-role.kubernetes.io/worker=
 kubectl --kubeconfig /opt/openshift/auth/kubeconfig-loopback label node master1 node-role.kubernetes.io/master=
+
+echo "Enable kubelet service"
+systemctl enable kubelet.service
 
 systemctl disable aiokube.service
 touch /opt/openshift/.aiokube.done

@@ -12,17 +12,14 @@ Environment=KUBELET_RUNTIME_REQUEST_TIMEOUT=10m
 EnvironmentFile=-/etc/kubernetes/kubelet-env
 EnvironmentFile=-/etc/kubernetes/kubelet-pause-image-override
 
-ExecStart=/usr/bin/hyperkube \
-  kubelet \
-    --anonymous-auth=false \
+ExecStart=/usr/local/bin/kubelet \
+    --config=/etc/kubernetes/kubelet.conf \
+    --bootstrap-kubeconfig=/opt/openshift/auth/kubeconfig  \
+    --kubeconfig=/var/lib/kubelet/kubeconfig \
     --container-runtime=remote \
     --container-runtime-endpoint=/var/run/crio/crio.sock \
-    --runtime-request-timeout=${KUBELET_RUNTIME_REQUEST_TIMEOUT} \
-    --pod-manifest-path=/etc/kubernetes/manifests \
-    --minimum-container-ttl-duration=6m0s \
+    --runtime-cgroups=/system.slice/crio.service \
     --cluster-domain=cluster.local \
-    --cgroup-driver=systemd \
-    --serialize-image-pulls=false \
     --v=2 \
     --volume-plugin-dir=/etc/kubernetes/kubelet-plugins/volume/exec \
     --pod-infra-container-image=${MACHINE_CONFIG_INFRA_IMAGE}

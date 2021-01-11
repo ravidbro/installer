@@ -16,6 +16,7 @@
     <dhcp>
       <range start='192.168.126.2' end='192.168.126.254'/>
       <host mac='52:54:00:ee:42:e1' name='master1' ip='192.168.126.10'/>
+      <host mac="52:54:00:9e:fb:48" name="zezere" ip="192.168.126.170"/>
     </dhcp>
   </ip>
 </network>

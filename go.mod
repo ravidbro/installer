@@ -46,8 +46,6 @@ require (
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v0.0.0-20191119172530-79f836b90111
 	github.com/kubevirt/terraform-provider-kubevirt v0.0.0-00010101000000-000000000000
 	github.com/libvirt/libvirt-go v5.10.0+incompatible
-	github.com/keybase/go-crypto v0.0.0-20190828182435-a05457805304 // indirect
-	github.com/libvirt/libvirt-go v5.10.0+incompatible
 	github.com/libvirt/libvirt-go-xml v5.10.0+incompatible // indirect
 	github.com/masterzen/simplexml v0.0.0-20190410153822-31eea3082786 // indirect
 	github.com/masterzen/winrm v0.0.0-20190308153735-1d17eaf15943 // indirect
@@ -83,7 +81,6 @@ require (
 	github.com/terraform-provider-openstack/terraform-provider-openstack v1.33.0
 	github.com/terraform-providers/terraform-provider-aws v1.60.1-0.20200807230610-d5346d47e3af
 	github.com/terraform-providers/terraform-provider-azurerm v1.44.1-0.20200911233120-57b2bfc9d42c
-	github.com/stoewer/go-strcase v1.1.0 // indirect
 	github.com/terraform-providers/terraform-provider-google v1.20.1-0.20200623174414-27107f2ee160
 	github.com/terraform-providers/terraform-provider-ignition/v2 v2.1.0
 	github.com/terraform-providers/terraform-provider-local v1.4.0
