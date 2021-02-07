@@ -207,8 +207,8 @@ then
 fi
 
 echo "Deploying CRD needed by kube-apiserver"
-until kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback apply -f /opt/openshift/manifests/0000_03_authorization-openshift_01_rolebindingrestriction.crd.yaml; do
-    sleep 2s
+until kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback apply -f /opt/openshift/config-bootstrap/manifests; do
+    sleep 3s
 done
 echo "CRD Deployed"
 
