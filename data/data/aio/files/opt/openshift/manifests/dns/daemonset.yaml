@@ -1,0 +1,191 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: dns-default
+  namespace: openshift-dns
+spec:
+  selector:
+    matchLabels:
+      dns.operator.openshift.io/daemonset-dns: default
+  template:
+    metadata:
+      labels:
+        dns.operator.openshift.io/daemonset-dns: default
+    spec:
+      serviceAccountName: dns
+      priorityClassName: system-node-critical
+      containers:
+      - name: dns
+        image: quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:5c9101a2f49ff13d3a6566e3f45d92487deb266bed222a5c4ec5537a18ba7341
+        # image is set at runtime
+        imagePullPolicy: IfNotPresent
+        terminationMessagePolicy: FallbackToLogsOnError
+        command: [ "coredns" ]
+        args: [ "-conf", "/etc/coredns/Corefile" ]
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/coredns
+          readOnly: true
+        ports:
+        - containerPort: 5353
+          name: dns
+          protocol: UDP
+        - containerPort: 5353
+          name: dns-tcp
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+          timeoutSeconds: 3
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+        resources:
+          requests:
+            cpu: 50m
+            memory: 70Mi
+#      - name: kube-rbac-proxy
+#        image: quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:880b93bcfc4fc37715b3ccaeead0ce8de17f27da068685f876c49dd31d52930e
+#        args:
+#        - --logtostderr
+#        - --secure-listen-address=:9154
+#        - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+#        - --upstream=http://127.0.0.1:9153/
+#        - --tls-cert-file=/etc/tls/private/tls.crt
+#        - --tls-private-key-file=/etc/tls/private/tls.key
+#        ports:
+#        - containerPort: 9154
+#          name: metrics
+#        resources:
+#          requests:
+#            cpu: 10m
+#            memory: 40Mi
+#        volumeMounts:
+#        - mountPath: /etc/tls/private
+#          name: metrics-tls
+#          readOnly: true
+      - name: dns-node-resolver
+        image: quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:5c7e547649bbb7ce08e2c7dd2af6818d1a7a88e797f77ee6bf0d0a5462369f92
+        imagePullPolicy: IfNotPresent
+        terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: hosts-file
+          mountPath: /etc/hosts
+        # env NAMESERVER and CLUSTER_DOMAIN are set at runtime
+        env:
+        - name: SERVICES
+          # Comma or space separated list of services
+          # NOTE: For now, ensure these are relative names; for each relative name,
+          # an alias with the CLUSTER_DOMAIN suffix will also be added.
+          value: "image-registry.openshift-image-registry.svc"
+        - name: NAMESERVER
+          value: 172.31.0.10
+        - name: CLUSTER_DOMAIN
+          value: cluster.local
+        command:
+        - /bin/bash
+        - -c
+        - |
+          #!/bin/bash
+          set -uo pipefail
+
+          trap 'jobs -p | xargs kill || true; wait; exit 0' TERM
+
+          OPENSHIFT_MARKER="openshift-generated-node-resolver"
+          HOSTS_FILE="/etc/hosts"
+          TEMP_FILE="/etc/hosts.tmp"
+
+          IFS=', ' read -r -a services <<< "${SERVICES}"
+
+          # Make a temporary file with the old hosts file's attributes.
+          cp -f --attributes-only "${HOSTS_FILE}" "${TEMP_FILE}"
+
+          while true; do
+            declare -A svc_ips
+            for svc in "${services[@]}"; do
+              # Fetch service IP from cluster dns if present. We make several tries
+              # to do it: IPv4, IPv6, IPv4 over TCP and IPv6 over TCP. The two last ones
+              # are for deployments with Kuryr on older OpenStack (OSP13) - those do not
+              # support UDP loadbalancers and require reaching DNS through TCP.
+              cmds=('dig -t A @"${NAMESERVER}" +short "${svc}.${CLUSTER_DOMAIN}"|grep -v "^;"'
+                    'dig -t AAAA @"${NAMESERVER}" +short "${svc}.${CLUSTER_DOMAIN}"|grep -v "^;"'
+                    'dig -t A +tcp +retry=0 @"${NAMESERVER}" +short "${svc}.${CLUSTER_DOMAIN}"|grep -v "^;"'
+                    'dig -t AAAA +tcp +retry=0 @"${NAMESERVER}" +short "${svc}.${CLUSTER_DOMAIN}"|grep -v "^;"')
+              for i in ${!cmds[*]}
+              do
+                ips=($(eval "${cmds[i]}"))
+                if [[ "$?" -eq 0 && "${#ips[@]}" -ne 0 ]]; then
+                  svc_ips["${svc}"]="${ips[@]}"
+                  break
+                fi
+              done
+            done
+
+            # Update /etc/hosts only if we get valid service IPs
+            # We will not update /etc/hosts when there is coredns service outage or api unavailability
+            # Stale entries could exist in /etc/hosts if the service is deleted
+            if [[ -n "${svc_ips[*]-}" ]]; then
+              # Build a new hosts file from /etc/hosts with our custom entries filtered out
+              grep -v "# ${OPENSHIFT_MARKER}" "${HOSTS_FILE}" > "${TEMP_FILE}"
+
+              # Append resolver entries for services
+              for svc in "${!svc_ips[@]}"; do
+                for ip in ${svc_ips[${svc}]}; do
+                  echo "${ip} ${svc} ${svc}.${CLUSTER_DOMAIN} # ${OPENSHIFT_MARKER}" >> "${TEMP_FILE}"
+                done
+              done
+
+              # TODO: Update /etc/hosts atomically to avoid any inconsistent behavior
+              # Replace /etc/hosts with our modified version if needed
+              cmp "${TEMP_FILE}" "${HOSTS_FILE}" || cp -f "${TEMP_FILE}" "${HOSTS_FILE}"
+              # TEMP_FILE is not removed to avoid file create/delete and attributes copy churn
+            fi
+            sleep 60 & wait
+            unset svc_ips
+          done
+        resources:
+          requests:
+            cpu: 5m
+            memory: 21Mi
+      dnsPolicy: Default
+      nodeSelector:
+        kubernetes.io/os: linux      
+      volumes:
+      - name: config-volume
+        configMap:
+          name: dns-default
+          defaultMode: 420
+          items:
+          - key: Corefile
+            path: Corefile
+      - name: hosts-file
+        hostPath:
+          path: /etc/hosts
+          type: File
+#      - name: metrics-tls
+#        secret:
+#          defaultMode: 420
+#          secretName: dns-default-metrics-tls
+      tolerations:
+      # DNS needs to run everywhere. Tolerate all taints
+      - operator: Exists
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Note: The daemon controller rounds the percentage up
+      # (unlike the deployment controller, which rounds down).
+      maxUnavailable: 10%

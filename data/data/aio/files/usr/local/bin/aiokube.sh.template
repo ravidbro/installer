@@ -205,11 +205,17 @@ then
 	touch control-plane.done
 fi
 
-echo "Deploying CRD needed by kube-apiserver"
+echo "Deploying CRDs needed by kube-apiserver"
 until kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback apply -f /opt/openshift/config-bootstrap/manifests; do
     sleep 3s
 done
-echo "CRD Deployed"
+echo "CRDs Deployed"
+
+echo "Deploying DNS components"
+until kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback apply -f /opt/openshift/manifests/dns; do
+    sleep 1s
+done
+echo "DNS Deployed"
 
 echo "Waiting for node to join"
 until [ $(kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback get nodes | grep Ready | wc -l) -eq 1 ]; do
@@ -218,6 +224,10 @@ done
 echo "Node joined"
 echo -e "$(kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback get nodes)"
 
+echo "Waiting for CSR approval"
+until [ $(kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback get csr | grep Pending | wc -l) -eq 0 ]; do
+    sleep 5s
+done
 echo "Stopping approve-csr service"
 systemctl disable approve-csr.service
 systemctl stop approve-csr.service
