@@ -1,7 +1,7 @@
 [Unit]
 Description=Bootstrap an all-in-one Kubernetes cluster
 Requires=crio-configure.service
-Wants=kubelet.service
+Wants=kubelet.service kube-proxy.service approve-csr.service
 After=kubelet.service crio-configure.service
 ConditionPathExists=!/opt/openshift/.aiokube.done
 
