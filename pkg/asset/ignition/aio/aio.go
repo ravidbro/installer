@@ -124,6 +124,18 @@ func (a *AIO) Generate(dependencies asset.Parents) error {
 		return err
 	}
 
+	a.Config.Storage.Files = ignition.ReplaceOrAppend(a.Config.Storage.Files,
+		ignition.FileFromURL("/usr/local/bin/kubelet", "root", 0755,
+			"https://storage.googleapis.com/kubernetes-release/release/v1.20.4/bin/linux/amd64/kubelet"))
+
+	a.Config.Storage.Files = ignition.ReplaceOrAppend(a.Config.Storage.Files,
+		ignition.FileFromURL("/usr/local/bin/kubectl", "root", 0755,
+			"https://storage.googleapis.com/kubernetes-release/release/v1.20.4/bin/linux/amd64/kubectl"))
+
+	a.Config.Storage.Files = ignition.ReplaceOrAppend(a.Config.Storage.Files,
+		ignition.FileFromURL("/usr/local/bin/kube-proxy", "root", 0755,
+			"https://storage.googleapis.com/kubernetes-release/release/v1.20.4/bin/linux/amd64/kube-proxy"))
+
 	enabled := map[string]struct{}{
 		"kubelet.service":     {},
 		"kube-proxy.service":  {},

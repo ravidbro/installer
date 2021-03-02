@@ -58,6 +58,25 @@ func FileFromBytes(path string, username string, mode int, contents []byte) ignt
 	}
 }
 
+// FileFromURL creates an ignition-config file pulling the content from URL
+func FileFromURL(path string, username string, mode int, URL string) igntypes.File {
+	return igntypes.File{
+		Node: igntypes.Node{
+			Path: path,
+			User: igntypes.NodeUser{
+				Name: &username,
+			},
+			Overwrite: ignutil.BoolToPtr(true),
+		},
+		FileEmbedded1: igntypes.FileEmbedded1{
+			Mode: &mode,
+			Contents: igntypes.Resource{
+				Source: ignutil.StrToPtr(URL),
+			},
+		},
+	}
+}
+
 // ConvertToRawExtension converts and ignition config to a RawExtension containing the ignition as raw bytes
 func ConvertToRawExtension(config igntypes.Config) (runtime.RawExtension, error) {
 	rawIgnConfig, err := json.Marshal(config)
