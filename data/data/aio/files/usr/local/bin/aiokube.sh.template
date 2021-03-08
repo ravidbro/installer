@@ -28,6 +28,8 @@ OPENSHIFT_HYPERKUBE_IMAGE=$(image_for hyperkube)
 OPENSHIFT_CLUSTER_POLICY_IMAGE=$(image_for cluster-policy-controller)
 
 
+echo "Restarting cri-o to start wih latest modified configuration"
+systemctl restart cri-o
 
 mkdir --parents ./{bootstrap-manifests,manifests}
 
