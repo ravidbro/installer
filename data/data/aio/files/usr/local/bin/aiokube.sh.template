@@ -209,15 +209,15 @@ fi
 
 echo "Deploying CRDs needed by kube-apiserver"
 until kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback apply -f /opt/openshift/config-bootstrap/manifests; do
-    sleep 3s
+    sleep 10s
 done
 echo "CRDs Deployed"
 
-echo "Deploying DNS components"
-until kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback apply -f /opt/openshift/manifests/dns; do
-    sleep 1s
+echo "Deploying ushift manifests"
+until kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback apply -f /var/lib/ushift/manifests/ --recursive ; do
+    sleep 10s
 done
-echo "DNS Deployed"
+echo "ushift manifests Deployed"
 
 echo "Waiting for node to join"
 until [ $(kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback get nodes | grep Ready | wc -l) -eq 1 ]; do
