@@ -96,6 +96,8 @@ func (a *AIO) Dependencies() []asset.Asset {
 		&tls.MCSCertKey{},
 		&tls.RootCA{},
 		&tls.ServiceAccountKeyPair{},
+		&tls.ServiceCASignerCertKey{},
+		&tls.ServiceCABundle{},
 		&releaseimage.Image{},
 		new(rhcos.Image),
 	}
@@ -233,6 +235,8 @@ func (a *AIO) addParentFiles(dependencies asset.Parents) {
 		&tls.MCSCertKey{},
 		&tls.ServiceAccountKeyPair{},
 		&tls.JournalCertKey{},
+		&tls.ServiceCASignerCertKey{},
+		&tls.ServiceCABundle{},
 	})
 
 	rootCA := &tls.RootCA{}

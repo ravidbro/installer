@@ -213,6 +213,13 @@ until kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback apply -f /opt
 done
 echo "CRDs Deployed"
 
+echo "Copying service-ca certificates"
+mkdir -p /var/lib/openshift/service-ca/ca-cabundle
+install --mode=444 /opt/openshift/tls/service-ca-bundle.crt /var/lib/openshift/service-ca/ca-cabundle/ca-bundle.crt
+mkdir -p /var/lib/openshift/service-ca/key
+install --mode=444 /opt/openshift/tls/service-ca-signer.crt /var/lib/openshift/service-ca/key/tls.crt
+install --mode=444 /opt/openshift/tls/service-ca-signer.key /var/lib/openshift/service-ca/key/tls.key
+
 echo "Deploying ushift manifests"
 until kubectl --kubeconfig=/opt/openshift/auth/kubeconfig-loopback apply -f /var/lib/ushift/manifests/ --recursive ; do
     sleep 10s
